@@ -3,7 +3,7 @@
 import { postRequest } from "@/handlers/ApiHandler";
 import { Helius } from "helius-sdk";
 
-const apiKey = process.env.NEXT_PUBLIC_HELIUS_API_KEY;
+const apiKey = process.env.HELIUS_API_KEY;
 
 if (!apiKey) {
   throw new Error('Missing Helius API key');
