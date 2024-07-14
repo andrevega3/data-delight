@@ -9,7 +9,7 @@ import { CheckCircleIcon, CheckIcon } from '@chakra-ui/icons';
 import PortfolioBox from '@/components/PortfolioBox';
 
 const Home: React.FC = () => {
-  const [walletAddress, setWalletAddress] = useState<string>('3Wgwjv7gcbEfSyovNaLJUZztqrut7a7xSrqz2SbRgRzs');
+  const [walletAddress, setWalletAddress] = useState<string>('');
   const [submittedAddress, setSubmittedAddress] = useState<string>('');
   const [fetchTrigger, setFetchTrigger] = useState<boolean>(false);
   const [view, setView] = useState<string>('NFTs');
