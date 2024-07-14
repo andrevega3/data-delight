@@ -38,6 +38,9 @@ export async function getAssetsByOwner(
         const response = await helius.rpc.getAssetsByOwner({
             ownerAddress: `${ownerAddress}`,
             page: page,
+            displayOptions: {
+                showCollectionMetadata: true,
+            }
         });
 
         return response

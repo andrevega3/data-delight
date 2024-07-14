@@ -8,7 +8,7 @@ interface CustomBulletListProps {
   level?: number;
 }
 
-export const CustomBulletList: React.FC<CustomBulletListProps> = ({ header, value, level = 0 }) => {
+const CustomBulletList: React.FC<CustomBulletListProps> = ({ header, value, level = 0 }) => {
   const [expanded, setExpanded] = useState<boolean>(false);
 
   const toggleExpand = () => {
@@ -73,3 +73,5 @@ export const CustomBulletList: React.FC<CustomBulletListProps> = ({ header, valu
     </ListItem>
   );
 };
+
+export default CustomBulletList;

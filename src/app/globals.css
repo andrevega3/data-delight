@@ -31,3 +31,8 @@ body {
     text-wrap: balance;
   }
 }
+
+.nft-box:hover .nft-image-container {
+  height: 50%;
+}
+
