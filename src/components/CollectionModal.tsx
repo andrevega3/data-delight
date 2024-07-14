@@ -61,7 +61,7 @@ interface CollectionModalProps {
                     overflow="hidden"
                     sx={{
                       ':hover .nft-image-container': {
-                        height: '50%',
+                        height: '70%',
                       },
                     }}
                   >
@@ -86,7 +86,7 @@ interface CollectionModalProps {
                       textAlign="left"
                       zIndex="1"
                       position="absolute"
-                      bottom="25%"
+                      bottom="14%"
                       width="100%"
                     >
                       {nft.content?.metadata.name}
@@ -101,6 +101,7 @@ interface CollectionModalProps {
                       _hover={{ backgroundColor: "green.500" }}
                       alignSelf="center" // Center the button horizontally
                       height="22px"
+                      width="75%"
                       mt="auto" // Push the button to the bottom
                       mb={1}
                     >

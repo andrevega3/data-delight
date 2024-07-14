@@ -11,6 +11,20 @@ if (!apiKey) {
 
 const helius = new Helius(apiKey);
 
+export async function getSolanaPrice(
+) {
+    try {
+        const response = await helius.rpc.getAsset({
+            id: "So11111111111111111111111111111111111111112"
+        });
+
+        return response
+    } catch (error) {
+        console.error('Error getting assets by creator:', error);
+        throw new Error('Error getting assets by creator');
+    }
+}
+
 export async function getAssetsByCreator(
     creatorAddress: string, 
     onlyVerified: boolean,
@@ -114,7 +128,7 @@ export async function getPriorityFeeEstimate() {
     };
     const response = await postRequest(HeliusURL, body)
 
-    return response.data;
+    return response.result;
 }
 
 export async function postRequestAssetsByOwner(address: string) {

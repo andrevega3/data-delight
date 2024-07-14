@@ -41,3 +41,40 @@ export async function postRequest<T>(url: string, body: any): Promise<ApiRespons
         }
     }
 }
+
+export async function getRequest<T>(url: string): Promise<ApiResponse<T>> {
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            return {
+                success: false,
+                error: errorText,
+            };
+        }
+        const result: T = await response.json();
+        return {
+            success: true,
+            result,
+        };
+    } catch (error: unknown) {
+        let errorMessage: string;
+
+        if (error instanceof Error) {
+            errorMessage = String(error);
+        } else {
+            errorMessage = String(error);
+        }
+
+        return {
+            success: false,
+            error: errorMessage,
+        };
+    }
+}
