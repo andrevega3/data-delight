@@ -7,7 +7,7 @@ import {
   getPaginationRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import { getAssetsByOwner, getTokenAccounts } from '@/utils/helius';
+import { getAssetsByOwner, getFungibleAssets, getTokenAccounts, postRequestAssetsByOwner } from '@/utils/helius';
 import { Collections, DAS } from 'helius-sdk';
 import { ResponsiveCirclePacking, CircleComponent } from '@nivo/circle-packing';
 import { useTooltip } from '@nivo/tooltip';
@@ -117,19 +117,19 @@ interface Asset {
   burnt: boolean;
 }
 
-interface MintTokensListProps {
+interface FungibleTokensListProps {
   walletAddress: string;
   onlyVerified: boolean;
   page: number;
   fetchTrigger: boolean;
 }
 
-const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVerified, page, fetchTrigger }) => {
-  const [assets, setAssets] = useState<Asset[]>([]);
+const FungibleTokensList: React.FC<FungibleTokensListProps> = ({ walletAddress, onlyVerified, page, fetchTrigger }) => {
+  const [assets, setAssets] = useState<DAS.GetAssetResponse[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedGrouping, setSelectedGrouping] = useState<string | null>(null);
-  const [filteredAssets, setFilteredAssets] = useState<Asset[]>(assets);
+  const [filteredAssets, setFilteredAssets] = useState<DAS.GetAssetResponse[]>(assets);
 
   useEffect(() => {
     const fetchAssets = async () => {
@@ -137,66 +137,28 @@ const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVeri
       setError(null);
 
       try {
-        const response = await getAssetsByOwner(walletAddress, 1);
+        const response = await postRequestAssetsByOwner(walletAddress) as DAS.GetAssetResponseList;
+
 
         if (response.items == undefined) {
           throw new Error('Failed to fetch minted tokens');
         }
         
         const data = response.items.map((item: DAS.GetAssetResponse) => {
+          if (item.interface != "FungibleToken"){
+            return;
+          }
+
           if (!item.content) {
             throw new Error(`Asset content is undefined for item ${item.id}`);
           }
 
-          // Check if creators is defined and has at least one element, then check if the first creator is verified
-          if (!item.creators?.length || !item.creators[0].verified) {
-            return;
-          }
+          // if (!item.content.metadata.attributes?.length || item.content.metadata.attributes[0].trait_type == "Website"){
+          //   return;
+          // }
 
-          if (!item.content.metadata.attributes?.length || item.content.metadata.attributes[0].trait_type == "Website"){
-            return;
-          }
-
-          return {
-            id: item.id,
-            content: item.content,
-            authorities: item.authorities || [],
-            compression: item.compression || {
-              eligible: false,
-              compressed: false,
-              data_hash: '',
-              creator_hash: '',
-              asset_hash: '',
-              tree: '',
-              seq: 0,
-              leaf_id: 0
-            },
-            grouping: item.grouping || [],
-            royalty: item.royalty || {
-              royalty_model: '',
-              target: null,
-              percent: 0,
-              basis_points: 0,
-              primary_sale_happened: false,
-              locked: false
-            },
-            creators: item.creators || [],
-            ownership: item.ownership || {
-              frozen: false,
-              delegated: false,
-              delegate: null,
-              ownership_model: '',
-              owner: ''
-            },
-            supply: item.supply || {
-              print_max_supply: 0,
-              print_current_supply: 0,
-              edition_nonce: null
-            },
-            mutable: item.mutable || false,
-            burnt: item.burnt || false
-          } as Asset;
-        }).filter(item => item !== undefined) as Asset[];
+          return item
+        }).filter(item => item !== undefined);
 
         setAssets(data);
       } catch (err) {
@@ -210,17 +172,13 @@ const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVeri
   }, [walletAddress, onlyVerified, page, fetchTrigger]); // include fetchTrigger as a dependency
 
   const circlePackingData = useMemo(() => {
-    const collectionData: { [key: string]: { count: number, image: string } } = {};
+    const collectionData: { [key: string]: { count: number, image?: string } } = {};
 
     assets.forEach(asset => {
-      const collection = asset.grouping.find(group => group.group_key === 'collection')?.group_value;
-      const image = asset.content.links.image;
-      if (collection) {
-        if (!collectionData[collection]) {
-          collectionData[collection] = { count: 0, image };
-        }
-        collectionData[collection].count += 1;
-      }
+      const mint = asset.token_info?.associated_token_address;
+      const image = asset.content?.links?.image;
+      const balance = asset.token_info?.balance;
+      if (mint && balance) collectionData[mint] = { count: balance, image };
     });
 
     return {
@@ -236,8 +194,7 @@ const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVeri
   useEffect(() => {
     if (selectedGrouping) {
       const groupingAssets = assets.filter(asset => {
-        const collection = asset.grouping.find(group => group.group_key === 'collection')?.group_value;
-        return collection === selectedGrouping;
+        return asset.token_info?.associated_token_address === selectedGrouping;
       });
       setFilteredAssets(groupingAssets);
     } 
@@ -283,20 +240,19 @@ const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVeri
     );
   };
 
-  const renderAssetDetails = (asset: Asset) => {
+  const renderAssetDetails = (asset: DAS.GetAssetResponse) => {
     const assetDetails = {
-      Name: asset.content.metadata.name,
-      Description: asset.content.metadata.description,
-      Artist: asset.content.metadata.attributes.find(attr => attr.trait_type === 'Artist')?.value,
-      Season: asset.content.metadata.attributes.find(attr => attr.trait_type === 'Season')?.value,
-      Drop: asset.content.metadata.attributes.find(attr => attr.trait_type === 'Drop')?.value,
-      Variation: asset.content.metadata.attributes.find(attr => attr.trait_type === 'Variation')?.value,
+      Name: asset.content?.metadata.name,
+      Description: asset.content?.metadata.description,
+      Artist: asset.content?.metadata?.attributes?.find(attr => attr.trait_type === 'Artist')?.value,
+      Season: asset.content?.metadata?.attributes?.find(attr => attr.trait_type === 'Season')?.value,
+      Drop: asset.content?.metadata?.attributes?.find(attr => attr.trait_type === 'Drop')?.value,
+      Variation: asset.content?.metadata?.attributes?.find(attr => attr.trait_type === 'Variation')?.value,
       // Rarity: asset.content.metadata.attributes.find(attr => attr.trait_type === 'Rarity')?.value,
       // Ownership: asset.ownership,
       // Supply: asset.supply.print_max_supply,
       // Compression: asset.compression,
-      Collection: asset.grouping.find(attr => attr.group_key === 'collection')?.group_value,
-      RoyaltyPercent: `${asset.royalty.percent * 100}%`,
+      Symbol: asset.token_info?.symbol,
       // Authorities: asset.authorities,
       Creators: asset.creators,
       // Mutable: asset.mutable,
@@ -350,5 +306,5 @@ const MintTokensList: React.FC<MintTokensListProps> = ({ walletAddress, onlyVeri
   };
   
 
-export default MintTokensList;
+export default FungibleTokensList;
 

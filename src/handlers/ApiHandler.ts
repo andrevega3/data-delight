@@ -1,6 +1,6 @@
 export interface ApiResponse<T> {
     success: boolean;
-    data?: T;
+    result?: T;
     error?: string;
 }
 
@@ -21,10 +21,10 @@ export async function postRequest<T>(url: string, body: any): Promise<ApiRespons
                 error: errorText,
             };
         }
-        const data = await response.json();
+        const { result }  = await response.json();
         return {
             success: true,
-            data,
+            result,
         };
     } catch (error: unknown) {
         let errorMessage: string;

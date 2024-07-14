@@ -1,21 +1,21 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { Box, Button, Heading, Input, Spinner, Text } from '@chakra-ui/react';
-import { getPriorityFeeEstimate } from '@/utils/helius';
+import { Box, Button, Heading, Input, Flex, ButtonGroup } from '@chakra-ui/react';
 import dynamic from 'next/dynamic';
-import { ftruncate } from 'fs';
 
 const MintedTokensList = dynamic(() => import('@/components/MintedTokensList'), { ssr: false });
+const FungibleTokensList = dynamic(() => import('@/components/FungibleTokensList'), { ssr: false });
 
 const Home: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [submittedAddress, setSubmittedAddress] = useState<string>('');
-  const [fetchTrigger, setFetchTrigger] = useState<number>(0);
+  const [fetchTrigger, setFetchTrigger] = useState<boolean>(false);
+  const [view, setView] = useState<string>('NFTs'); // State to manage current view
 
   const handleSearch = () => {
     setSubmittedAddress(walletAddress);
-    setFetchTrigger((prev) => prev + 1);
+    setFetchTrigger((prev) => !prev);
   };
 
   return (
@@ -27,15 +27,35 @@ const Home: React.FC = () => {
         onChange={(e) => setWalletAddress(e.target.value)}
       />
       <Button onClick={handleSearch} mt={2}>
-        Fetch Minted Tokens
+        Fetch Data
       </Button>
-      {submittedAddress && 
-      <MintedTokensList 
-      walletAddress={submittedAddress}
-      onlyVerified={true}
-      page={1}
-      fetchTrigger={fetchTrigger} 
-      />}
+
+      <ButtonGroup mt={4} mb={4}>
+        <Button onClick={() => setView('NFTs')} isActive={view === 'NFTs'}>
+          NFTs
+        </Button>
+        <Button onClick={() => setView('SPL')} isActive={view === 'SPL'}>
+          SPL
+        </Button>
+      </ButtonGroup>
+
+      {submittedAddress && view === 'NFTs' && (
+        <MintedTokensList
+          walletAddress={submittedAddress}
+          onlyVerified={true}
+          page={1}
+          fetchTrigger={fetchTrigger}
+        />
+      )}
+
+      {submittedAddress && view === 'SPL' && (
+        <FungibleTokensList
+          walletAddress={submittedAddress}
+          onlyVerified={false}
+          page={1}
+          fetchTrigger={fetchTrigger}
+        />
+      )}
     </Box>
   );
 }
